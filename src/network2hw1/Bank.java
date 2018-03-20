@@ -5,7 +5,16 @@
  */
 package network2hw1;
 
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
 import javax.swing.JFrame;
+
+import static jdk.nashorn.internal.objects.NativeString.trim;
 
 /**
  *
@@ -16,6 +25,7 @@ public class Bank extends javax.swing.JFrame {
     /**
      * Creates new form Bank
      */
+    //String accountNumber ;
     public Bank() {
         initComponents();
         moneyAmount.setEnabled(false);
@@ -24,7 +34,7 @@ public class Bank extends javax.swing.JFrame {
         operationNum.setEnabled(false);
         query.setEnabled(false);
         showHistory.setEnabled(false);
-        result.setEnabled(false);
+        result.setEnabled(true);
         
     }
 
@@ -57,6 +67,7 @@ public class Bank extends javax.swing.JFrame {
         result = new javax.swing.JTextArea();
         showHistory = new javax.swing.JButton();
         Password = new javax.swing.JPasswordField();
+        note = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -123,6 +134,12 @@ public class Bank extends javax.swing.JFrame {
 
         Password.setToolTipText("");
 
+        note.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                noteActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -164,17 +181,22 @@ public class Bank extends javax.swing.JFrame {
                                     .addComponent(operation, 0, 181, Short.MAX_VALUE))))))
                 .addContainerGap(42, Short.MAX_VALUE))
             .addGroup(layout.createSequentialGroup()
-                .addGap(50, 50, 50)
-                .addComponent(connect, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(50, 50, 50)
+                        .addComponent(connect, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(note, javax.swing.GroupLayout.PREFERRED_SIZE, 287, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(showHistory, javax.swing.GroupLayout.PREFERRED_SIZE, 264, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(128, 128, 128))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jScrollPane1)
-                        .addGap(18, 18, 18))))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 418, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -211,8 +233,13 @@ public class Bank extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(connect, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(showHistory))
-                .addGap(18, 18, 18)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 210, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 210, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(45, 45, 45)
+                        .addComponent(note, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(23, Short.MAX_VALUE))
         );
 
@@ -230,8 +257,9 @@ public class Bank extends javax.swing.JFrame {
     private void connectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_connectActionPerformed
         // TODO add your handling code here:
         
-        String Method = (String)method.getSelectedItem();
-        Integer accountNumber = Integer.parseInt(accountNum.getText()) ;
+        String Method = (String)this.method.getSelectedItem();
+        String serv = (String)this.serverType.getSelectedItem();
+        /*
         String password = "";
         char [] pass = Password.getPassword();
         for(int x=0 ; x<pass.length ; x++)
@@ -239,27 +267,127 @@ public class Bank extends javax.swing.JFrame {
             password += pass[x];
         }
         String Server = (String)method.getSelectedItem();
-        if(Server == "PHP Server")
+        */
+        if(serv == "PHP Server")
         {
             if(Method == "Get")
-                Login_PHP_Get(accountNumber , password);
+                Login_PHP_Get();
             else
-                Login_PHP_Post(accountNumber , password);
+                Login_PHP_Post();
         }
-        // here check other servers 
+        
     }//GEN-LAST:event_connectActionPerformed
 
+    String dataStr = "";
+
+    String contentStr = "application/x-www-form-urlencoded";
+  public void addParameter(String ps, String vs) {
+        if (ps == null || vs == null || ps.length() == 0 || vs.length() == 0) {
+            return;
+        }
+        if (dataStr.length() > 0) {
+            dataStr += "&";
+        }
+        try {
+            dataStr += ps + "=" + URLEncoder.encode(vs, "ASCII");
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
+    }
+    void  Login_PHP_Post(){
+        dataStr = "";
+        OutputStream os;
+        InputStream is;
+        String accountNumber = accountNum.getText() ;
+        String password = "";
+        char [] pass = Password.getPassword();
+        for(int x=0 ; x<pass.length ; x++)
+        {
+            password += pass[x];
+        }
+        addParameter("accountNumber", accountNumber );
+        addParameter("password", password);
+        String urlStr = "http://localhost:8080/HW1.php";
+        try {
+            URL myURL = new URL(urlStr);
+            URLConnection myConn = myURL.openConnection();
+            myConn.setDoOutput(true);
+            myConn.setDoInput(true);
+            myConn.setRequestProperty("Content-Type", contentStr);
+            myConn.setUseCaches(false);
+            //dataStr = "T1=67&T2=88";
+            this.result.setText("POST: sending to " + urlStr+"\r\n data:"+dataStr);
+            BufferedOutputStream out = new BufferedOutputStream(myConn.getOutputStream());
+            out.write(dataStr.getBytes());//"ACTION=add&NUMPTS=2&DATA=L0001\nL0002");
+            out.close();
+            //out.close();
+            String SS = "";
+            int b = -1;
+
+            String t = "";
+            is = myConn.getInputStream();
+            while ((b = is.read()) != -1) {
+                if ((char) b == '\r') {
+                    SS += "\n";
+                } else {
+                    SS = SS + (char) b;
+                };
+            }
+            // this.jTextField1.setText(SS);
+            this.note.setText(SS);
+        } catch (Exception e) {
+            System.out.println(e.toString());
+            this.result.setText("Faild: exception");
+        }
     
+}
     
-    void  Login_PHP_Get(Integer A , String Pas){
+    void  Login_PHP_Get(){
+        
+        DataInputStream dis;
+        String accountNumber = accountNum.getText() ;
+        String password = "";
+        char [] pass = Password.getPassword();
+        for(int x=0 ; x<pass.length ; x++)
+        {
+            password += pass[x];
+        }
+        try {
+            
+            String urlStr = "http://localhost:8080/HW1.php";
+            String str = urlStr + "?accountNumber=" + accountNumber + "&password=" + password;;
+            URL u = new URL(str);
+            this.result.setText("GET: sending to " + str);
+
+            dis = new DataInputStream(u.openConnection().getInputStream());
+          
+            int b;
+            String t = "";
+            String SS = "";
+
+            URLConnection myConn = u.openConnection();
+            InputStream is = myConn.getInputStream();
+            while ((b = is.read()) != -1) {
+                if ((char) b == '\r') {
+                    SS += "\n";
+                } else {
+                    SS = SS + (char) b;
+                };
+
+            }
+            this.result.setText(SS);
+           
+
+        } catch (Exception e) {
+            System.out.println(e.toString());
+            this.note.setText("Faild: exception");
+        }
     
 }
 
 
     
-    void  Login_PHP_Post(Integer A , String Pas){
-    
-}
+
     private void queryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_queryActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_queryActionPerformed
@@ -267,6 +395,10 @@ public class Bank extends javax.swing.JFrame {
     private void showHistoryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showHistoryActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_showHistoryActionPerformed
+
+    private void noteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_noteActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_noteActionPerformed
 
     /**
      * @param args the command line arguments
@@ -320,6 +452,7 @@ public class Bank extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JComboBox method;
     private javax.swing.JTextField moneyAmount;
+    private javax.swing.JTextField note;
     private javax.swing.JComboBox operation;
     private javax.swing.JSpinner operationNum;
     private javax.swing.JButton query;
